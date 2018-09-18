@@ -1,0 +1,88 @@
+---
+output: flexdashboard::flex_dashboard
+orientation: rows
+title: "PCORI Conference Support Proposal timeline"
+runtime: shiny
+---
+```{r set-up}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(timevis, suppressPackageStartupMessages(" "))
+library(dplyr, suppressPackageStartupMessages(" "))
+library(flexdashboard, suppressPackageStartupMessages(" "))
+library(shiny, suppressPackageStartupMessages(" "))
+library(readxl, suppressPackageStartupMessages(" "))
+library(kableExtra, suppressPackageStartupMessages(" "))
+```
+
+```{r}
+conftimeline <- read_excel("2018.10.01_ECANA PCORI Conference Award.xlsx", sheet = "timeline")
+conftimeline$title <- paste(conftimeline$owner, conftimeline$content, conftimeline$start, sep = " | ")
+conftimeline$content <- paste(conftimeline$owner, conftimeline$content, sep = ": ")
+conftimeline <- as.data.frame(conftimeline)
+
+components <- read_excel("2018.10.01_ECANA PCORI Conference Award.xlsx", sheet = "components")
+components <- components %>% 
+  select(Group, `Item (parent folder)`)
+
+
+priorities <- read_excel("2018.10.01_ECANA PCORI Conference Award.xlsx", sheet = "priorities")
+```
+
+
+* Final business due date: September 12, 2018  
+* Final science due date: September 24, 2018  
+* Sponsor due date: October 1, 2018  
+* Link to RFA: https://www.pcori.org/funding-opportunities/announcement/engagement-award-conference-support  
+* Link to grant folder: https://uwnetid-my.sharepoint.com/personal/eskell_uw_edu/_layouts/15/onedrive.aspx?FolderCTID=0x012000D2EE731CBBF43749827CF4B0FB77A9D2&id=%2Fpersonal%2Feskell_uw_edu%2FDocuments%2FGYN%20ONC-SORCE%2FECANA%2FGrants%2F2018%2E10%2E01%20-%20PCORI%20Conference%20proposal 
+
+Timeline {data-icon="fa-calendar"}
+========
+### Timeline
+    
+```{r }
+shinyApp(
+  ui = fluidPage(
+    timevisOutput("timeline"),
+    actionButton("btn", "Click to zoom to next week")
+  ),
+  server = function(input, output) {
+    output$timeline <- renderTimevis(
+      timevis(data = data.frame(conftimeline),
+        groups = data.frame(id = 1:2, content = c("1", "2"))) %>% 
+        setGroups(data.frame(id = 1:2, content = c("Business", "Science"))) %>% 
+        setWindow(Sys.Date()- 14, Sys.Date() + 7)
+    )
+    observeEvent(input$btn, {
+      setWindow("timeline", Sys.Date() + 7, Sys.Date() + 14)
+    })
+  }
+)
+```
+
+
+Components and Priorities {data-icon="fa-columns"}
+========
+
+Column 
+----------
+### Components overview
+    
+```{r }
+kable(components) %>% 
+    kable_styling(bootstrap_options = c("condensed", "bordered", "responsive"), full_width = F) %>% 
+  collapse_rows(columns = 1:2, valign = "top")
+```
+
+Column
+---------
+### Guide for weekly tasks
+
+```{r}
+kable(priorities) %>% 
+    kable_styling(bootstrap_options = c("bordered", "hover"), full_width = F) %>% 
+  collapse_rows(columns = 1:3, valign = "top")
+```
+
+
+
